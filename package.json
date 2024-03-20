@@ -1,0 +1,58 @@
+{
+  "type": "module",
+  "name": "@hazae41/decibel",
+  "version": "0.0.0",
+  "description": "Queriable in-memory database for TypeScript",
+  "homepage": "https://github.com/hazae41/decibel",
+  "repository": "github:hazae41/decibel",
+  "author": "hazae41",
+  "license": "MIT",
+  "main": "./dist/cjs/index.cjs",
+  "module": "./dist/esm/index.mjs",
+  "types": "./dist/types/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "./dist/esm",
+    "./dist/cjs",
+    "./dist/types"
+  ],
+  "scripts": {
+    "build": "rimraf dist && rollup -c",
+    "test": "node ./dist/test/index.test.mjs",
+    "prepare": "npm run build"
+  },
+  "dependencies": {
+    "@hazae41/future": "^1.0.3",
+    "@hazae41/result": "^1.1.8"
+  },
+  "devDependencies": {
+    "@hazae41/phobos": "^1.0.10",
+    "@hazae41/rimraf": "^1.0.1",
+    "@rollup/plugin-typescript": "^11.1.5",
+    "@types/node": "^20.8.4",
+    "rollup": "^4.0.2",
+    "rollup-plugin-dts": "^6.1.0",
+    "rollup-plugin-node-externals": "^6.1.2",
+    "typescript": "^5.2.2"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.mjs",
+      "require": "./dist/cjs/index.cjs"
+    }
+  },
+  "keywords": [
+    "database",
+    "in-memory",
+    "memory",
+    "query",
+    "queriable",
+    "nosql",
+    "mongodb",
+    "typescript",
+    "esmodules",
+    "tested",
+    "unit-tested"
+  ]
+}
