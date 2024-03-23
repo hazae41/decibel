@@ -41,3 +41,6 @@ db.append({
  */
 const [john] = db.get({ age: "ascending", id: "descending" }, { job: "Engineer", certifications: ["GCP"] })
 ```
+
+- Only columns whose type is `bigint` will be orderable
+- Arrays are filtered with AND (inner join) not OR (outer join) e.g. `["GCP", "AWS"]` -> arrays containing both `Azure` and `GCP` (e.g. `["Azure", "Docker", "GCP]`)
