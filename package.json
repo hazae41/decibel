@@ -21,10 +21,6 @@
     "test": "node ./dist/test/index.test.mjs",
     "prepare": "npm run build"
   },
-  "dependencies": {
-    "@hazae41/future": "^1.0.3",
-    "@hazae41/result": "^1.1.8"
-  },
   "devDependencies": {
     "@hazae41/phobos": "^1.0.10",
     "@hazae41/rimraf": "^1.0.1",
