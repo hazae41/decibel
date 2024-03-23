@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "@hazae41/decibel",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "description": "Queriable in-memory database for TypeScript",
   "homepage": "https://github.com/hazae41/decibel",
   "repository": "github:hazae41/decibel",
