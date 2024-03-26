@@ -21,17 +21,17 @@ npm i @hazae41/decibel
 const db = new Database()
 
 db.append({
-  id: 1n,
+  id: "1",
   name: "John",
-  age: 30n,
+  age: 30,
   job: "Engineer",
   certifications: ["AWS", "Azure", "GCP"]
 })
 
 db.append({
-  id: 2n,
+  id: "2",
   name: "Jane",
-  age: 30n,
+  age: 30,
   job: "Engineer",
   certifications: ["AWS", "Azure", "Docker"]
 })
@@ -42,5 +42,5 @@ db.append({
 const [john] = db.get({ age: "ascending", id: "descending" }, { job: "Engineer", certifications: ["GCP"] })
 ```
 
-- Only columns whose type is `bigint` will be orderable
-- Arrays are filtered with inner join e.g. `["GCP", "AWS"]` -> arrays containing both `Azure` and `GCP`
+- Any column that can be converted to `number` will be orderable (e.g. `0.1`, `"0.1"`, `1n`, `"0x1"`)
+- Arrays are filtered with inter / inner join / "and" (e.g. `["GCP", "AWS"]` -> arrays containing both `Azure` and `GCP`)

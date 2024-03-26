@@ -1,4 +1,19 @@
-export interface Columns {
+export class Indexed<T> {
+  constructor(
+    readonly index: Indexes,
+    readonly value: T
+  ) { }
+}
+
+export interface Data {
+  readonly [key: string]: unknown
+}
+
+export interface Indexes {
+  readonly [key: string]: number
+}
+
+export interface Filters {
   readonly [key: string]: unknown
 }
 
@@ -11,15 +26,17 @@ export type Ordering =
   | "descending"
 
 export interface Order {
-  readonly ascending: Columns[]
-  readonly descending: Columns[]
+  readonly ascending: Indexed<Data>[]
+  readonly descending: Indexed<Data>[]
 }
 
 export interface Index {
-  readonly map: Map<unknown, Columns[]>
+  readonly dataByValue: Map<unknown, Indexed<Data>[]>
 }
 
 export class Database {
+
+  readonly resolver = new Map<Data, Indexed<Data>>()
 
   readonly orderByKey = new Map<string, Order>()
   readonly indexByKey = new Map<string, Index>()
@@ -29,7 +46,7 @@ export class Database {
   /**
    * Find the smallest set of rows based on the orders and filters.
    */
-  #smallest(orders: Orders, filters: Columns) {
+  #smallest(orders: Orders, filters: Filters) {
     let smallest = undefined
 
     for (const key in filters) {
@@ -45,12 +62,12 @@ export class Database {
         : [value]
 
       for (const subvalue of list) {
-        const rows = index.map.get(subvalue)
+        const rows = index.dataByValue.get(subvalue)
 
         if (rows == null)
           return []
 
-        if (smallest == null || rows.length < smallest.length)
+        if (smallest == null || (rows.length < smallest.length))
           smallest = rows
         continue
       }
@@ -62,10 +79,11 @@ export class Database {
       if (order == null)
         return []
 
-      const ordered = order[orders[key]]
+      const ordering = orders[key]
+      const rows = order[ordering]
 
-      if (smallest == null || ordered.length < smallest.length)
-        smallest = ordered
+      if (smallest == null || (rows.length < smallest.length))
+        smallest = rows
       continue
     }
 
@@ -74,19 +92,19 @@ export class Database {
     return smallest
   }
 
-  get(orders: Orders, filters: Columns) {
+  get(orders: Orders, filters: Data) {
     const smallest = this.#smallest(orders, filters)
 
-    return smallest.filter(row => {
+    return smallest.filter(x => {
       for (const key in filters) {
-        if (filters[key] === row[key])
+        if (filters[key] === x.value[key])
           continue
-        if (typeof filters[key] !== typeof row[key])
+        if (typeof filters[key] !== typeof x.value[key])
           return false
 
         if (Array.isArray(filters[key])) {
           const a = filters[key] as unknown[]
-          const b = row[key] as unknown[]
+          const b = x.value[key] as unknown[]
 
           for (const subvalue of a)
             if (!b.includes(subvalue))
@@ -101,8 +119,8 @@ export class Database {
       return true
     }).sort((a, b) => {
       for (const key in orders) {
-        const ax = a[key] as bigint
-        const bx = b[key] as bigint
+        const ax = a.index[key]
+        const bx = b.index[key]
 
         const d = orders[key] === "ascending"
           ? ax - bx
@@ -115,26 +133,34 @@ export class Database {
       }
 
       return 0
-    })
+    }).map(x => x.value)
   }
 
-  append(row: Columns) {
-    for (const key in row) {
-      if (typeof row[key] === "bigint") {
+  append(data: Data) {
+    const index: Record<any, number> = {}
+
+    const indexed = new Indexed(index, data)
+
+    for (const key in data) {
+      const number = Number(data[key])
+
+      if (Number.isNaN(number) === false) {
+        index[key] = number
+
         const order = this.orderByKey.get(key)
 
         if (order == null) {
-          const ascending = [row]
-          const descending = [row]
+          const ascending = [indexed]
+          const descending = [indexed]
 
           this.orderByKey.set(key, { ascending, descending })
         } else {
           const { ascending, descending } = order
 
-          ascending.push(row)
+          ascending.push(indexed)
           ascending.sort((a, b) => {
-            const ax = a[key] as bigint
-            const bx = b[key] as bigint
+            const ax = a.index[key]
+            const bx = b.index[key]
 
             const d = ax - bx
 
@@ -145,10 +171,10 @@ export class Database {
             return 0
           })
 
-          descending.push(row)
+          descending.push(indexed)
           descending.sort((a, b) => {
-            const ax = a[key] as bigint
-            const bx = b[key] as bigint
+            const ax = a.index[key]
+            const bx = b.index[key]
 
             const d = bx - ax
 
@@ -165,34 +191,34 @@ export class Database {
         const index = this.indexByKey.get(key)
 
         if (index == null) {
-          const map = new Map<unknown, Columns[]>()
+          const dataByValue = new Map<unknown, Indexed<Data>[]>()
 
-          const value = row[key]
+          const value = data[key]
 
           const list = Array.isArray(value)
             ? value
             : [value]
 
-          for (const value of list)
-            map.set(value, [row])
+          for (const subvalue of list)
+            dataByValue.set(subvalue, [indexed])
 
-          this.indexByKey.set(key, { map })
+          this.indexByKey.set(key, { dataByValue })
         } else {
-          const { map } = index
+          const { dataByValue } = index
 
-          const value = row[key]
+          const value = data[key]
 
           const list = Array.isArray(value)
             ? value
             : [value]
 
           for (const subvalue of list) {
-            const rows = map.get(subvalue)
+            const rows = dataByValue.get(subvalue)
 
             if (rows == null) {
-              map.set(subvalue, [row])
+              dataByValue.set(subvalue, [indexed])
             } else {
-              rows.push(row)
+              rows.push(indexed)
             }
           }
         }
@@ -200,20 +226,26 @@ export class Database {
     }
   }
 
-  remove(row: Columns) {
-    for (const key in row) {
-      if (typeof row[key] === "bigint") {
+  remove(data: Data) {
+    const indexed = this.resolver.get(data)
+
+    if (indexed == null)
+      return
+    this.resolver.delete(data)
+
+    for (const key in data) {
+      if (typeof data[key] === "bigint") {
         const order = this.orderByKey.get(key)
 
         if (order != null) {
           const { ascending, descending } = order
 
-          const i = ascending.indexOf(row)
+          const i = ascending.indexOf(indexed)
 
           if (i !== -1)
             ascending.splice(i, 1)
 
-          const j = descending.indexOf(row)
+          const j = descending.indexOf(indexed)
 
           if (j !== -1)
             descending.splice(j, 1)
@@ -224,19 +256,19 @@ export class Database {
         const index = this.indexByKey.get(key)
 
         if (index != null) {
-          const { map } = index
+          const { dataByValue } = index
 
-          const value = row[key]
+          const value = data[key]
 
           const list = Array.isArray(value)
             ? value
             : [value]
 
           for (const subvalue of list) {
-            const rows = map.get(subvalue)
+            const rows = dataByValue.get(subvalue)
 
             if (rows != null) {
-              const i = rows.indexOf(row)
+              const i = rows.indexOf(indexed)
 
               if (i !== -1)
                 rows.splice(i, 1)
