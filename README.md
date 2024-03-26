@@ -39,7 +39,7 @@ db.append({
 /**
  * Find people whose job is `Engineer` and who have the `GCP` certification, order by ascending age, then order by descending id if they have the same age
  */
-const [john] = db.get({ age: "ascending", id: "descending" }, { job: "Engineer", certifications: ["GCP"] })
+const [john] = db.get({ age: "ascending", id: "descending" }, { job: "Engineer", certifications: ["AWS", "GCP"] })
 ```
 
 - Any column that can be converted to `number` will be orderable (e.g. `0.1`, `"0.1"`, `1n`, `"0x1"`)
