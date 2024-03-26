@@ -25,6 +25,16 @@ function randomOf<T>(array: T[]) {
   db.append(jane)
 
   console.log(db.get({ age: "ascending", id: "descending" }, { job: "Engineer" }))
+
+  console.log(db)
+
+  db.remove(john)
+
+  console.log(db)
+
+  db.remove(jane)
+
+  console.log(db)
 }
 
 {

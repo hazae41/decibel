@@ -141,6 +141,8 @@ export class Database {
 
     const indexed = new Indexed(index, data)
 
+    this.resolver.set(data, indexed)
+
     for (const key in data) {
       const number = Number(data[key])
 
@@ -234,7 +236,9 @@ export class Database {
     this.resolver.delete(data)
 
     for (const key in data) {
-      if (typeof data[key] === "bigint") {
+      const number = Number(data[key])
+
+      if (Number.isNaN(number) === false) {
         const order = this.orderByKey.get(key)
 
         if (order != null) {
@@ -249,6 +253,9 @@ export class Database {
 
           if (j !== -1)
             descending.splice(j, 1)
+
+          if (ascending.length === 0)
+            this.orderByKey.delete(key)
         }
       }
 
@@ -272,8 +279,14 @@ export class Database {
 
               if (i !== -1)
                 rows.splice(i, 1)
+
+              if (rows.length === 0)
+                dataByValue.delete(subvalue)
             }
           }
+
+          if (dataByValue.size === 0)
+            this.indexByKey.delete(key)
         }
       }
     }
