@@ -73,4 +73,10 @@ function randomOf<T>(array: T[]) {
   const end = performance.now()
 
   console.log(result, end - start)
+
+  for (const key of db.resolver.keys()) {
+    db.remove(key)
+  }
+
+  console.log(db)
 }
