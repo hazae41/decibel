@@ -36,12 +36,20 @@ export interface Index {
 
 export class Database {
 
-  readonly resolver = new Map<Data, Indexed<Data>>()
+  readonly #registry = new Map<Data, Indexed<Data>>()
 
-  readonly orderByKey = new Map<string, Order>()
-  readonly indexByKey = new Map<string, Index>()
+  readonly #orderByKey = new Map<string, Order>()
+  readonly #indexByKey = new Map<string, Index>()
 
   constructor() { }
+
+  [Symbol.iterator]() {
+    return this.#registry.keys()
+  }
+
+  get size() {
+    return this.#registry.size
+  }
 
   /**
    * Find the smallest set of rows based on the orders and filters.
@@ -50,7 +58,7 @@ export class Database {
     let smallest = undefined
 
     for (const key in filters) {
-      const index = this.indexByKey.get(key)
+      const index = this.#indexByKey.get(key)
 
       if (index == null)
         return []
@@ -74,7 +82,7 @@ export class Database {
     }
 
     for (const key in orders) {
-      const order = this.orderByKey.get(key)
+      const order = this.#orderByKey.get(key)
 
       if (order == null)
         return []
@@ -141,7 +149,7 @@ export class Database {
 
     const indexed = new Indexed(index, data)
 
-    this.resolver.set(data, indexed)
+    this.#registry.set(data, indexed)
 
     for (const key in data) {
       const number = Number(data[key])
@@ -149,13 +157,13 @@ export class Database {
       if (Number.isNaN(number) === false) {
         index[key] = number
 
-        const order = this.orderByKey.get(key)
+        const order = this.#orderByKey.get(key)
 
         if (order == null) {
           const ascending = [indexed]
           const descending = [indexed]
 
-          this.orderByKey.set(key, { ascending, descending })
+          this.#orderByKey.set(key, { ascending, descending })
         } else {
           const { ascending, descending } = order
 
@@ -190,7 +198,7 @@ export class Database {
       }
 
       {
-        const index = this.indexByKey.get(key)
+        const index = this.#indexByKey.get(key)
 
         if (index == null) {
           const dataByValue = new Map<unknown, Indexed<Data>[]>()
@@ -204,7 +212,7 @@ export class Database {
           for (const subvalue of list)
             dataByValue.set(subvalue, [indexed])
 
-          this.indexByKey.set(key, { dataByValue })
+          this.#indexByKey.set(key, { dataByValue })
         } else {
           const { dataByValue } = index
 
@@ -229,17 +237,17 @@ export class Database {
   }
 
   remove(data: Data) {
-    const indexed = this.resolver.get(data)
+    const indexed = this.#registry.get(data)
 
     if (indexed == null)
       return
-    this.resolver.delete(data)
+    this.#registry.delete(data)
 
     for (const key in data) {
       const number = Number(data[key])
 
       if (Number.isNaN(number) === false) {
-        const order = this.orderByKey.get(key)
+        const order = this.#orderByKey.get(key)
 
         if (order != null) {
           const { ascending, descending } = order
@@ -255,12 +263,12 @@ export class Database {
             descending.splice(j, 1)
 
           if (ascending.length === 0)
-            this.orderByKey.delete(key)
+            this.#orderByKey.delete(key)
         }
       }
 
       {
-        const index = this.indexByKey.get(key)
+        const index = this.#indexByKey.get(key)
 
         if (index != null) {
           const { dataByValue } = index
@@ -286,7 +294,7 @@ export class Database {
           }
 
           if (dataByValue.size === 0)
-            this.indexByKey.delete(key)
+            this.#indexByKey.delete(key)
         }
       }
     }

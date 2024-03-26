@@ -29,7 +29,7 @@ function randomOf<T>(array: T[]) {
   db.remove(john)
   db.remove(jane)
 
-  console.log(db)
+  console.log(db.size)
 }
 
 {
@@ -74,9 +74,9 @@ function randomOf<T>(array: T[]) {
 
   console.log(result, end - start)
 
-  for (const key of db.resolver.keys()) {
+  for (const key of db) {
     db.remove(key)
   }
 
-  console.log(db)
+  console.log(db.size)
 }
